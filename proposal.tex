@@ -9,6 +9,7 @@
 \usepackage{graphicx} % used for includegraphics
 \singlespace
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+\usepackage{float}
 
 \title{\textbf{Dynamic Business Performance Forecaster: ML-Driven Predictions, Factor Prioritization, and Interactive Real-Time Scenario Planning with Natural Language Explanations}}
 \author{Andre Ebu}
@@ -20,16 +21,19 @@
 In an increasingly volatile economic landscape, businesses face significant challenges in forecasting various  key performance indicators, including revenue, productivity, and costs. The traditional methods of forecasting involve static historical data, leading to inaccurate predictions in an ever-changing market, with error rates in demand predictions sometimes exceeding 30\% in dynamic sectors like retail and manufacturing. The main challenges lie in incorporating real-time variables  and understanding complex models to identify key factors. In business analytics student and professionals sometimes find it difficult to relate data science to practical decision-making, they create models, but when they try to apply the models to real business decisions, it doesn’t help. The aim of this project is to design an interactive tool that uses machine learning(ML) for accurate forecasting, prioritizes high-impact factors, and integrates GenAI for natural language explanations to enable users to conduct real-time scenario simulations. This project is focused on small to medium enterprises (SMEs) to address a lack of educational analytics platforms, prioritizing interpretability and adaptability over enterprise-scale complexity found in tools like Tableau.
 
 Several research forms the basis of this research. From a computer science viewpoint, foundational ML algorithms are essential for predictive modeling and feature prioritization. Kim et al. propose a framework using deep neural networks for sales forecasting in short-life-cycle products, demonstrating how time-series data can increase accuracy by 15-20\% through dynamic inputs. Nguyen and Welch discuss the application of GenAI in providing human-readable explanations from analytical models, highlighting the use of LLMs in interpreting qualitative and quantitative data in predictive modeling.\cite{doi:10.1177/10944281251377154}. Their work highlights how LLMs can transform raw predictions into conversational insights, boosting user comprehension. Zhang et al. discuss a model for financial forecasting using streaming APIs, illustrating the potential of adapting predictions to big data feeds to enhance decision-making efficiency. \cite{inproceedings}
+The software will enable users, such as business owners or analysts, to input historical data, adjust variables through sliders, and obtain forecasts with ranked factors, such as "Increasing ad budget by 10\%  boosts revenue by 8\%, prioritized over supply costs." GenAI can also offer explanations, such as "Based on current inflation trends from real-time APIs, this scenario reduces risk by 12\%." This educational approach can help users understand ML insights better, making it suitable for academic and professional purposes.
 
-When you use an image, such as in Figure~\ref{fig:method}, refer to it in the text.
 
-\begin{figure}[h]
+
+\begin{figure}[H]
 \begin{center}
-\includegraphics[scale=0.7]{methodology.png}
-\caption{Archie}
-\label{fig:method}       % Give a unique label
+	\includegraphics[scale=0.35]{image.jpg}
+	\caption{Proposed system architecture for the Dynamic Business Performance Forecaster}
+	\label{fig:prototype}
 \end{center}
 \end{figure}
+Figure~\ref{fig:prototype} Proposed system architecture for the Dynamic Business Performance Forecaster. The interface allows users to upload datasets or input variables manually. An ML engine processes data through models like XGBoost for forecasting and SHAP for factor analysis, with real-time APIs feeding live updates. GenAI (via Hugging Face models) generates natural language outputs, displayed in an interactive dashboard with charts and scenario sliders.
+
 
 
 \newpage
