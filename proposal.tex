@@ -40,10 +40,16 @@ Figure~\ref{fig:prototype} Proposed system architecture for the Dynamic Business
 \section*{Appendix}
 A concise list of features / user stories in the order in which they will be built. A few examples are below to demonstrate the expected scope and level of granularity; you will have more features than this.
 \begin{itemize}
-	\item Default picture display on web application.
-	\item On a button-click, user can separate the image into foreground and background.
-	\item User can select a picture from their desktop.
-	\item Selected picture displays on the web application.
+	\item Load and process business datasets. (Handle CSV/Excel uploads.)
+	\item Define user inputs for forecasting variables. (Allow entry of factors like revenue history, costs, and external metrics via forms.)
+	\item Implement a basic ML forecasting model. (Use time-series algorithms for initial predictions on uploaded data.)
+	\item Integrate feature importance calculation. (Rank factors by impact on outcomes.)
+	\item Build interactive dashboard interface. (Use Streamlit to create UI with sliders for variable adjustments and visual charts.)
+	\item Add real-time data pulling. (Connect free APIs for economic indicators to update forecasts dynamically.)
+	\item Generate scenario simulations. (Enable "what-if" analysis by rerunning models with user-tweaked inputs.)
+	\item Incorporate GenAI for explanations. (Use Hugging Face models to produce natural language summaries of predictions and factors.)
+	\item Display results with visualizations. (Show charts, heatmaps, and ranked lists of prioritized factors.)
+	\item Validate model accuracy.
 \end{itemize}
 
 
