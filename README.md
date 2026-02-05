@@ -12,3 +12,6 @@ over enterprise-scale complexity found in tools like Tableau.
 | **Issue** | **Due date** | |
 | --------- | ------------ | -- |
 | [Example issue description with link](https://github.com/hmm34/example-annotated-bibliography/issues/1) | 9/1/25 | |
+|Load and process business datasets(https://github.com/AndreEbu-git/juniorIS/issues/1)|    ||
+|
+
