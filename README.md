@@ -14,7 +14,7 @@ over enterprise-scale complexity found in tools like Tableau.
 | [Example issue description with link](https://github.com/hmm34/example-annotated-bibliography/issues/1) | 9/1/25 | |
 |Load and process business datasets(https://github.com/AndreEbu-git/juniorIS/issues/1)| 16/2/26 ||
 |Design user inputs for forecasting variables(https://github.com/AndreEbu-git/juniorIS/issues/2)| 23/2/26 ||
-|Implement a basic ML forecasting model(https://github.com/AndreEbu-git/juniorIS/issues/3)| 30/2/26 ||
+|Implement a basic ML forecasting model(https://github.com/AndreEbu-git/juniorIS/issues/3)| 2/3/26 ||
 |Integrate feature importance calculation(https://github.com/AndreEbu-git/juniorIS/issues/3)| ||
 |Build interactive dashboard interface(https://github.com/AndreEbu-git/juniorIS/issues/5)| ||
 |Add real time data pulling(https://github.com/AndreEbu-git/juniorIS/issues/6)| ||
