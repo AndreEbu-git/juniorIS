@@ -39,3 +39,13 @@ with tab1:
                 df = pd.read_excel(uploaded_file)
 
             # Start Basic preprocessing
+            df = df.dropna(thresh=len(df.columns)*0.7) # Drops rows with a lot of missing data
+            if 'Date' in df.columns or 'date' in df.columns.lower():
+                date_col = next(c for c in df.columns if 'date' in c.lower())
+                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+
+            st.session_state['df'] = df
+            st.success(f"Data loaded! Shape: {df.shape}")
+        except Exception as e:
+            st.error(f"Error loading file: {e}")
+            
