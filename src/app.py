@@ -48,4 +48,12 @@ with tab1:
             st.success(f"Data loaded! Shape: {df.shape}")
         except Exception as e:
             st.error(f"Error loading file: {e}")
-            
+
+# --- Data Preview ---
+with tab2:
+    if 'df' in st.session_state:
+        st.subheader("Data Preview")
+        st.dataframe(st.session_state['df'].head(10))
+        
+        st.subheader("Quick Stats")
+        st.write(st.session_state['df'].describe())
