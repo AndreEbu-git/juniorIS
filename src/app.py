@@ -1,6 +1,14 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+from datetime import datetime
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent))
+
+from dataloader import DataLoader, DataPreprocessor, DataValidator
+
 
 # Title
 st.set_page_config(
@@ -8,6 +16,10 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+if 'data_loader' not in st.session_state:
+    st.session_state.dataloader = DataLoader()
+
+
 st.title("Dynamic Business Performance Forecaster")
 st.markdown("Upload your business data to start forecasting and scenario planning")
 
@@ -26,10 +38,6 @@ with tab1:
     )
 
     if uploaded_file is not None:
-        # Save the uploaded file temporarily
-        temp_path = f"/tmp/{uploaded_file.name}"
-        with open(temp_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
         
         try:
             if uploaded_file.name.endswith(".csv"):
@@ -38,11 +46,25 @@ with tab1:
             else:
                 df = pd.read_excel(uploaded_file)
 
+            st.success(f" Successfully loaded {len(df)} rows")
+
             # Start Basic preprocessing
-            df = df.dropna(thresh=len(df.columns)*0.7) # Drops rows with a lot of missing data
-            if 'Date' in df.columns or 'date' in df.columns.lower():
-                date_col = next(c for c in df.columns if 'date' in c.lower())
-                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            st.subheader("Data Validation")
+            validator = DataValidator(min_rows=10)
+            is_valid, issues = validator.validate_dataset(df)
+
+            if is_valid:
+                st.success("Dataset passes basic validation")
+
+            else:
+                st.warning("Validation Issues found")
+                for issue in issues:
+                    st.write(f"- {issue}")
+
+            if validator.validation_results.get('warnings'):
+                with st.expander("⚠️ Data Quality Warnings"):
+                    for warning in validator.validation_results['warnings']:
+                        st.write(f"- {warning}")
 
             st.session_state['df'] = df
             st.success(f"Data loaded! Shape: {df.shape}")
