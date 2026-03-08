@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent))
 
-from dataloader import DataLoader, DataPreprocessor, DataValidator
+from business_forecaster.dataloader import DataLoader, DataPreprocessor, DataValidator
 
 
 # Title
@@ -24,7 +24,7 @@ st.title("Dynamic Business Performance Forecaster")
 st.markdown("Upload your business data to start forecasting and scenario planning")
 
 # Tabs
-tab1, tab2 = st.tabs(["📁 Upload Dataset", "📋 Data Summary"])
+tab1, tab2, tab3, tab4 = st.tabs(["📁 Upload Dataset", "📋 Data Summary", "Manual Entry", "Forecasting"])
 
 # --- Feature 1: Load and Preprocess ---
 with tab1:
@@ -79,3 +79,40 @@ with tab2:
         
         st.subheader("Quick Stats")
         st.write(st.session_state['df'].describe())
+
+
+
+# with tab3:
+#     st.header("Manual Data Entry")
+#     st.markdown("Enter business varibales and historical data manially")
+
+#     entry_tab1, entry_tab2 = st.tabs(["Define Variables", "Historical Data"])
+
+#     with entry_tab1:
+#         st.subheader("Add Business Variables")
+
+#         with st.expander("Common Business Variables"):
+#             common_vars = ManualDataEntry.get_common_variables_list()
+#             common_df = pd.DataFrame(common_vars)
+#             st.dataframe(common_df, use_container_width=True)
+
+#             with st.form("add_variable_form"):
+#                 col1, col2, col3 = st.columns(3)
+
+#                 with col1:
+#                     var_name = st.text_input("Variable Name*", placeholder="variable name")
+#                     var_value = st.number_input("Current value*", value=0.0)
+
+#                 with col2:
+#                     var_unit = st.text_input("Unit", placeholder="e.g., USD, %, units")
+#                     var_category = st.selectbox(
+#                         "Category", ["general", "revenue", "cost", "marketing", "operations", "external"]
+#                     )
+
+#                 with col3:
+#                     var_description = st.text_input("Description", placeholder="Brief description")
+#                     is_target = st.checkbox("This is the target variable to forecast")
+
+#                 submitted = st.form_submit_button("Add variable")
+
+
