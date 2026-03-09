@@ -24,7 +24,7 @@ except ImportError:
 @dataclass
 class ForecastConfig:
     target_column: str
-    feature_column: List[str] = field(default_factory=List)
+    feature_columns: List[str] = field(default_factory=List)
     test_size: float = 0.2
     n_lags: int = 3
     forecast_periods: int = 6
@@ -52,6 +52,7 @@ class ForecastResult:
     predictions: pd.DataFrame
     future_predictions: pd.DataFrame
     metrics: Dict[str, float]
+    feature_importance: Dict[str, float]
     model: Any
     config: ForecastConfig
     training_history: Dict[str, List[float]] = field(default_factory=dict)
