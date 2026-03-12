@@ -14,6 +14,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 try:
+    '''
+    Why XGBoost? Business data rarely has linear patterns, Gradient Boosting captures complex interactions
+    It has built-in feature importance. It automatically tells you what matters, which is critical for business interpretation
+    Since this is project is for SMEs whcih usually have few data points, Gradient boosting works well even with limited data. Neural networks would overfit badly here
+    It also trains in seconds, so users don't have to wait
+    '''
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
     logger.info("Using XGBoost for forecasting")
@@ -23,6 +29,8 @@ except ImportError:
 
 @dataclass
 class ForecastConfig:
+    # stores all the user settings in one place
+
     target_column: str
     feature_columns: List[str] = field(default_factory=List)
     test_size: float = 0.2
@@ -49,6 +57,7 @@ class ForecastConfig:
     
 @dataclass
 class ForecastResult:
+    # packages all output together
     predictions: pd.DataFrame
     future_predictions: pd.DataFrame
     metrics: Dict[str, float]
@@ -86,13 +95,15 @@ class TimeSeriesForecaster:
             df_prep[f'{target}_rolling_mean_3'] = df_prep[target].rolling(window=3, min_periods=1).mean()
             df_prep[f'{target}_rolling_std_3'] = df_prep[target].rolling(window=3, min_periods=1).std().fillna(0)
         
-        # Add time-based features if enabled
+        # Add time-based features
+        # This tell the model when this is happening. Without the time features the model just sees it as random numbers
         if self.config.use_time_features:
             df_prep['month'] = df_prep.index.month
             df_prep['quarter'] = df_prep.index.quarter
             df_prep['year'] = df_prep.index.year
             df_prep['day_of_year'] = df_prep.index.dayofyear
             
+            # Encodes months as a circle, not a line. Enf of year patterns continue into the new year
             df_prep['month_sin'] = np.sin(2 * np.pi * df_prep['month'] / 12)
             df_prep['month_cos'] = np.cos(2 * np.pi * df_prep['month'] / 12)
         
@@ -136,7 +147,10 @@ class TimeSeriesForecaster:
         y = df_features[target]
 
         self.training_data = df_features.copy()
-
+        '''
+        This is Time-Series Split not random split. It simulates real forecsting-predict future based on past
+        bet for time series forecasting
+        '''
         test_size = int(len(X) * self.config.test_size)
 
         if test_size < 2:
