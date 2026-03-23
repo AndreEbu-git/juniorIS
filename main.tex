@@ -17,9 +17,17 @@
 \maketitle
 
 \section{Introduction}
-In volatile markets shaped by inflation shifts, consumer behavior changes, supply chain disruptions, and rapid technological innovation, traditional static forecasting methods are often insufficient. Forecasting business performance is a major challenge in management practice and computer science research. For small and medium-sized enterprises (SMEs), which lack the necessary resources for accessing advanced analytics platforms, there is a growing need for flexible and interpretable forecasting solutions that combine machine learning, real-time data, and user-friendly design.
+In volatile markets shaped by inflation shifts, consumer behavior changes, supply chain
+disruptions, and rapid technological innovation, traditional static forecasting methods are
+often insufficient. Forecasting business performance is a central challenge in both management practice and computer science research. For small and medium-sized enterprises (SMEs), which often lack the resources to access sophisticated analytics platforms, there is a growing need for flexible, interpretable, and accessible forecasting solutions that combine machine learning, real-time data integration, and user-friendly design.
 
-This literature review combines research from five core areas relevant to the proposed Dynamic Business Performance Forecaster: real-time and big data forecasting, predictive analysis and interpretable models, deep learning for sales prediction, generative AI for explanation nd interaction, and analytics-driven organizational agility. These areas of literature establish the theoretical and technical foundation for developing an ML-based forecaster with feature prioritization and natural language explanation capabilities.
+While substantial improvements have been made in the realm of predictive modeling and business intelligence, a notable gap remains between powerful forecasting models and the needs of non-expert users. Most existing business forecasting models either focus on model precision while sacrificing interpretability or emphasize user friendliness while sacrificing depth in analysis for meaningful strategic decision-making. Moreover, most forecasting models are domain-specific, which restricts their applicability to a wide range of industries.
+
+This paper introduces the Dynamic Business Performance Forecaster, which is a non-expert, interactive analytics tool intended to fill the gap in business forecasting models. The tool is comprised of an XGBoost predictive model, a real-time dashboard, feature importance, scenario planning, and natural language explanations powered by generative AI. Unlike existing business forecasting models, this tool is intended to be domain-independent, covering a wide range of business industries, from retail and e-commerce to manufacturing and services, with the sole requirement being that the user provide a structured tabular dataset with a clearly defined target variable.
+
+The contributions of this work are threefold. First, it proves that a general-purpose forecasting architecture can be created using XGBoost with feature prioritization without compromising user interactiveness for non-technical users. Second, the integration of a generative AI explanation layer closes the gap between quantitative model outputs and human-understandable business insights. Third, the interactive scenario planning feature helps users to simulate “what-if” scenarios for critical business parameters and visualize projected business outcomes in real-time.
+
+The rest of the paper is outlined as follows. Section 2 provides a review of the related literature across five important areas: real-time analytics, predictive modeling, deep learning for forecasting, generative AI for explanations, and analytics-driven organizational agility. Section 3 explains the methodology of the system and the research goals. Section 4 explains the implementation  of the system and the design decisions. Section 5 explains the results of the system evaluation. Section 6 provides an analysis of the work, and Section 7 concludes the paper with reflections on the contribution of the work, limitations, and future work.
 \section{Related Works}
 \subsection{Real-Time Analytics and Big Data Forecasting}
 Traditional forecasting methods focus on historical data and static statistical models. However, these techniques have proven ineffective in volatile environments such as the economy. In the paper "Real-time analytics in financial market forecasting: A big data approach," Balbaa et al.\cite{inproceedings} suggest a real-time big data financial forecasting model that combines streaming data processing and machine learning techniques such as Random Forests and Long Short-Term Memory(LSTM) networks.
@@ -80,16 +88,38 @@ There are enterprise tools such as Tableau, which offer visualization but lack M
 
 
 \section{Methodology}
-Dijkstra's algorithm was chosen for single-source shortest path computation on graphs with non-negative edge weights, following the implementation presented in CLRS.
+What did I build, study or test?
+I built an interactive analysis dashboard 
+
+What are my research question or goals
+
+What data, tools, or systems are involved?
+
+What would someone need to replicate this?
+
+I plan on picking a particular field like business sales, or manufactoring stuff and then present the results from the model later.
+
+\section{Implementation}
+
 \subsection{Why XGBoost?}
 I will be talking about the model I used for my project. The pros, cons and why I didn't use other models like Linear Regression, ARIMA, LSTM.
+
+Talk about the major components of the system?
+
+What are the most important design choices?
+
+What will I show in a diagram or figure?
+
+
 
 
 
 
 \section{Results}
-An exemplary figure is shown in Figure~\ref{fig:dijkstra}. Any time a figure is used, it must have a capation and be directly referred to and discussed in the text.
 
+What outputs or measurements will I report?
+What tables/figures will exist?
+What will count as "success"  or "failure"?
 %\begin{figure}[b] puts the image to the (closest) bottom of page
 %\begin{figure}[t] puts the image to the (closest) top of page
 %\begin{figure}[h] allows the image to float, putting it roughly wherever it was placed in the text.
@@ -104,6 +134,8 @@ An exemplary figure is shown in Figure~\ref{fig:dijkstra}. Any time a figure is 
 
 
 \section{Conclusion}
+\subsection{Analysis}
+\subsection{Discussion}
 
 \bibliographystyle{acm}
 \bibliography{bibliography.bib}
