@@ -138,7 +138,11 @@ data ingestion and preprocessing, model training and inference, natural language
 
 \textbf{Training and Inference. }Following preprocessing, the XGBoost algorithm trains a baseline model based on the uploaded dataset with default parameters. However, users who want better performance can optionally fine-tune the model's settings. Subsequently, the model outputs predictions.
 
-\textbf{Feature Importance.}Feature Importance. The system calculates and visualizes feature importance scores using XGBoost's built-in gain metric. This metric measures how much each feature, on average, helps reduce prediction error each time it is used to make a split in a decision tree. The visual representation of this information shows the user which features have the greatest impact on predicting outcomes.
+\textbf{Feature Importance.} The system calculates and visualizes feature importance scores using XGBoost's built-in gain metric. This metric measures how much each feature, on average, helps reduce prediction error each time it is used to make a split in a decision tree. The visual representation of this information shows the user which features have the greatest impact on predicting outcomes.
+Natural Language Explanation Layer. The feature importance scores along with the values of the input features are serialized and fed to the LLM through an API call. The prompt instructs the model to provide a brief, business-oriented explanation of the prediction,
+such as, “Advertising expenditure is the strongest driver of your projected revenue. Based on current inputs, a 10\% increase in ad spend is associated with an estimated 8\% revenue increase." This approach ensures explanations are faithful to the model's outputs and prevents the LLM from generating its own results.
+
+\textbf{Interactive Dashboard.} The front-end dashboard for this project is constructed using Streamlit. In the interface, users can load the dataset, set the target variable, and use a sliding scale to modify the values of the input features in real time. Whenever a slider is moved, the system calls the model's prediction endpoint, and both the forecast and a plain‑language explanation of that forecast update instantly. The dashboard also shows the feature importance chart and key performance metrics for the model.
 
 \section{Results}
 
