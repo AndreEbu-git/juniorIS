@@ -341,6 +341,7 @@ with tab3:
                 
                 future_df = result.future_predictions.copy()
                 
+                
                 # Combine historical actual and future predictions
                 fig = go.Figure()
                 

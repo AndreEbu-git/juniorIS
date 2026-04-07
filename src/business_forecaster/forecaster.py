@@ -84,6 +84,7 @@ class TimeSeriesForecaster:
             df_prep = df_prep.set_index(date_column)
 
         df_prep = df_prep.sort_index()
+        df_prep = df_prep.groupby(df_prep.index).sum()
 
         target = self.config.target_column
 
@@ -266,6 +267,7 @@ class TimeSeriesForecaster:
             if freq is None:
                 # Fallback: calculate median difference
                 date_diffs = df_features.index[1:] - df_features.index[:-1]
+                
                 median_diff = pd.Timedelta(np.median([d.total_seconds() for d in date_diffs]), unit='s')
             else:
                 # Convert frequency to timedelta
@@ -287,6 +289,7 @@ class TimeSeriesForecaster:
         
         for step in range(1, self.config.forecast_periods + 1):
             next_date = last_date + median_diff * step
+            print(f"Next date: {next_date}, step: {step}, median_diff: {median_diff}")
             
             # Create feature row for prediction
             feature_row = pd.DataFrame(index=[next_date])
@@ -350,6 +353,7 @@ class TimeSeriesForecaster:
             
             future_dates.append(next_date)
             future_values.append(pred_value)
+            print(f"Future dates: {future_dates}")
         
         future_df = pd.DataFrame({
             'date': future_dates,
