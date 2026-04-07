@@ -144,6 +144,17 @@ such as, “Advertising expenditure is the strongest driver of your projected re
 
 \textbf{Interactive Dashboard.} The front-end dashboard for this project is constructed using Streamlit. In the interface, users can load the dataset, set the target variable, and use a sliding scale to modify the values of the input features in real time. Whenever a slider is moved, the system calls the model's prediction endpoint, and both the forecast and a plain‑language explanation of that forecast update instantly. The dashboard also shows the feature importance chart and key performance metrics for the model.
 
+\begin{figure}[h] 
+  \begin{center}
+    \includegraphics[width=16cm]{imgs/business dashboard.png}
+    \caption{Dashboard showing the main display with the side tabs.}
+    \label{fig: business dashboard}
+  \end{center}
+\end{figure}
+
+\subsection{Key Design Choices}
+Several design choices shaped the final design of the system. Firstly, the system was built with modularity in mind. Every component, such as preprocessing, modeling, explanation, and the UI, is a separate, independent module. This makes it easy to replace the prediction model or swap out the language model that provides explanations without disrupting the rest of the system. Second, the system is designed to fail gracefully. If the LLM API becomes unavailable, the performance of the dashboard is unaffected, as it still works with visual explanations. Lastly, the predictions and explanations are created on demand and not beforehand. This ensures that when users explore different scenarios by changing inputs, the experience always reflects their current settings instantly.
+
 \section{Results}
 
 What outputs or measurements will I report?
