@@ -8,6 +8,7 @@
 \singlespace
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
 \usepackage{graphicx}
+\usepackage{booktabs}
 
 \title{\textbf{Dynamic Business Performance Forecaster: ML-Driven Predictions, Factor Prioritization, and Interactive Real-Time Scenario Planning with Natural Language Explanations}}
 \author{Andre Ebu}
@@ -157,9 +158,9 @@ Several design choices shaped the final design of the system. Firstly, the syste
 
 \section{Results}
 
-What outputs or measurements will I report?
-What tables/figures will exist?
-What will count as "success"  or "failure"?
+%What outputs or measurements will I report?
+%What tables/figures will exist?
+%What will count as "success"  or "failure"?
 %\begin{figure}[b] puts the image to the (closest) bottom of page
 %\begin{figure}[t] puts the image to the (closest) top of page
 %\begin{figure}[h] allows the image to float, putting it roughly wherever it was placed in the text.
@@ -170,8 +171,39 @@ What will count as "success"  or "failure"?
 %  \label{fig:dijkstra}
 % \end{center}
 %\end{figure}
+The Dynamic Business Performance Forecaster was evaluated using a retail store sales
+dataset containing daily records across multiple store locations. The dataset included five
+columns: \texttt{store}, \texttt{sales}, \texttt{holiday}, \texttt{promo}, and \texttt{date}.
+The target variable was \texttt{sales}, and the input features used for modeling were
+\texttt{store}, \texttt{promo}, and \texttt{holiday}. A forecast horizon of six periods was
+configured for scenario planning evaluation. Before the model was trained, the preprocessing pipeline automatically created several additional features from the raw data. 
+These included lag features (past sales values), and rolling statistics (moving averages or sums). These engineered features formed the basis of the model's predictive ability.
 
+\subsection{Predictive Performance}
+The trained XGBoost model was evaluated on a held-out test set comprising 20\% of the
+dataset. 
+Table~\ref{tab:results} summarizes the evaluation metrics.
+\begin{table}[b]
+  \centering
+  \caption{XGBoost Model Evaluation Metrics on Held-Out Test Set}
 
+  \label{tab:results}
+  \begin{tabular}{lcc}
+  \hline
+  \textbf{Metric} & \textbf{Description} & \textbf{Value} \\
+    \hline
+    RMSE  & Root Mean Squared Error      & 19.80  \\
+    MAE   & Mean Absolute Error          & 12.73  \\
+    MAPE  & Mean Absolute Percentage Error & 0.50\% \\
+    R2 & Coefficient of Determination & 0.983  \\
+    \hline
+  \end{tabular}
+\end{table}
+The model achieved an R2 of 0.983, indicating that approximately 98.3\% of the
+variance in store sales is explained by the model. The low MAPE of 0.50\% confirms
+that predictions deviate from actual sales values by less than one percent on average,
+which represents strong forecasting accuracy for a general-purpose, domain-agnostic
+system. The RMSE of 19.80 and MAE of 12.73 indicate the typical size of prediction errors in the same units as the sales values themselves. The difference between these two metrics suggests that the model's errors are fairly stable, with very few extreme mistakes that would make the RMSE much larger than the MAE.
 
 \section{Conclusion}
 \subsection{Analysis}
