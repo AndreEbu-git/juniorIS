@@ -136,6 +136,9 @@ data ingestion and preprocessing, model training and inference, natural language
 
 \textbf{Data Ingestion and Preprocessing.} The system takes in CSV tabular files as inputs. After the upload, it automatically infers types, determines the desired output variable specified by the user, and implements data preprocessing steps which involve missing value imputation (median for numerical variables and mode for categorical variables), one-hot encoding of categorical variables, and scaling numeric values using min-max normalization. The entire preprocessing pipeline is built so that the user barely needs to adjust any settings.
 
+\textbf{Training and Inference. }Following preprocessing, the XGBoost algorithm trains a baseline model based on the uploaded dataset with default parameters. However, users who want better performance can optionally fine-tune the model's settings. Subsequently, the model outputs predictions.
+
+\textbf{Feature Importance.}Feature Importance. The system calculates and visualizes feature importance scores using XGBoost's built-in gain metric. This metric measures how much each feature, on average, helps reduce prediction error each time it is used to make a split in a decision tree. The visual representation of this information shows the user which features have the greatest impact on predicting outcomes.
 
 \section{Results}
 
