@@ -130,7 +130,11 @@ The decision of XGBoost as the forecasting model was made after reviewing severa
 
 XGBoost has proven to be a good compromise between these conflicting factors. It always shows competitive prediction performance on structured data sets, comes with built-in ways to calculate feature importance (such as gain-based and permutation-based metrics), and trains quickly on any machine. Notably, XGBoost is independent of the domain of the data, meaning it can be applied to predict retail sales, manufacturing productivity, or service demand without modification. For these reasons, XGBoost was the best option for developing an interpretative forecasting platform for small businesses.
 
+\subsection{System Architecture}
+The Dynamic Business Performance Forecaster is composed of four modular components:
+data ingestion and preprocessing, model training and inference, natural language explanation generation, and the interactive dashboard interface.
 
+\textbf{Data Ingestion and Preprocessing.} The system takes in CSV tabular files as inputs. After the upload, it automatically infers types, determines the desired output variable specified by the user, and implements data preprocessing steps which involve missing value imputation (median for numerical variables and mode for categorical variables), one-hot encoding of categorical variables, and scaling numeric values using min-max normalization. The entire preprocessing pipeline is built so that the user barely needs to adjust any settings.
 
 
 \section{Results}
