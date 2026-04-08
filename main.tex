@@ -205,6 +205,29 @@ that predictions deviate from actual sales values by less than one percent on av
 which represents strong forecasting accuracy for a general-purpose, domain-agnostic
 system. The RMSE of 19.80 and MAE of 12.73 indicate the typical size of prediction errors in the same units as the sales values themselves. The difference between these two metrics suggests that the model's errors are fairly stable, with very few extreme mistakes that would make the RMSE much larger than the MAE.
 
+\subsection{Feature Importance Analysis}
+After the model was trained, feature importance scores were computed using XGBoost's
+gain metric. This metric measures, on average, how much each feature helps reduce prediction error every time it is used to make a split in a decision tree. The top five most influential features are
+presented in Table~\ref{tab:features}.
+
+\begin{table}[h]
+\centering
+\caption{Top 5 Features by XGBoost Gain Importance}
+\label{tab:features}
+\begin{tabular}{clp{7.5cm}}
+\hline
+\hline
+\textbf{Rank} & \textbf{Feature} & \textbf{Description} \\
+\hline
+  1 & \texttt{year}                    & Calendar year extracted from the date field; captures long-term sales trends \\ \hline
+  2 & \texttt{sales\_rolling\_mean\_3} & Three-period rolling average of sales; captures short-term momentum \\ \hline
+  3 & \texttt{store\_x\_sales}         & Interaction term between store identity and historical sales; captures store-level performance patterns \\ \hline
+  4 & \texttt{sales\_lag\_3}           & Sales value from three periods prior; provides direct autoregressive signal \\ \hline
+  5 & \texttt{holiday\_x\_sales}       & Interaction term between holiday indicator and historical sales; captures holiday-driven sales lift by store \\ \hline
+\hline
+\end{tabular}
+\end{table}
+
 \section{Conclusion}
 \subsection{Analysis}
 \subsection{Discussion}
