@@ -228,6 +228,30 @@ presented in Table~\ref{tab:features}.
 \end{tabular}
 \end{table}
 
+\section{Analysis and Discussion}
+From the above results, it is evident that the Dynamic Business Performance
+Forecaster meets all the key objectives behind its design and construction. The XGBoost model provides strong predictive accuracy on business data organized in tables without needing any customization for a specific industry, providing evidence that such generalizable
+forecasting framework as proposed in this project is indeed feasible and practically useful.
+
+In testing, the feature importance results matched what business logic would expect, suggesting the model is picking up on real, meaningful patterns and not overfitting to noise. That is one of the major advantages of the proposed
+solution as it provides interpretability, enabling users to inspect the decision-making process
+of the model, as opposed to black box models of deep learning architectures. This finding is
+consistent with the results of the previous review of relevant literature \cite{PredictiveAnalytics}.
+It is also worth noting that all of the five highest-ranking features are generated features, which are automatically produced by the pre-processing pipeline of the system based on three raw features: 'store,' 'promo,' 'holiday,' and '\texttt{date}'. This highlights the importance of the feature engineering process, proving that there is predictive information hidden in a few basic business variables. The prevalence of time-based features such as 'year,' 'sales\_rolling\_mean\_3,' and 'sales\_lag\_3' emphasizes the importance of recent sales data for predicting future performance. Meanwhile, the interaction variables ('store\_x\_sales' and 'holiday\_x\_sales') suggest that the influence of 'store' and 'holiday' on sales is not linear.
+
+The natural language explanation layer made it even easier for users to understand
+the model's results by converting the numeric output into English statements describing
+the impact of each feature on model outcomes. Consequently, more users could engage
+with predictive analytics regardless of their quantitative expertise which aligns to Nguyen and Welch’s \cite{doi:10.1177/10944281251377154} recommendations to build a hybrid approach in which AI results remain grounded in quantifiable data.
+
+Lastly, the ability to simulate alternative futures using the interactive scenario planning
+module demonstrated great effectiveness as a decision-support tool. Instead of relying on
+one fixed prediction, users could analyze possible future scenarios that would become
+an actionable part of the decision-making process. In this sense, the proposed system can
+be considered data-driven strategic foresight discussed by Tai and Wang \cite{10.1145/3624875.3624885}.
+
+\subsection{Limitations}
+
 \section{Conclusion}
 \subsection{Analysis}
 \subsection{Discussion}
