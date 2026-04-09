@@ -184,9 +184,7 @@ The trained XGBoost model was evaluated on a held-out test set comprising 20\% o
 dataset. 
 Table~\ref{tab:results} summarizes the evaluation metrics.
 \begin{table}[b]
-  \centering
-  \caption{XGBoost Model Evaluation Metrics on Held-Out Test Set}
-
+  
   \label{tab:results}
   \begin{tabular}{lcc}
   \hline
@@ -198,6 +196,8 @@ Table~\ref{tab:results} summarizes the evaluation metrics.
     R2 & Coefficient of Determination & 0.983  \\
     \hline
   \end{tabular}
+  \centering
+  \caption{XGBoost Model Evaluation Metrics on Held-Out Test Set}
 \end{table}
 The model achieved an R2 of 0.983, indicating that approximately 98.3\% of the
 variance in store sales is explained by the model. The low MAPE of 0.50\% confirms
@@ -212,8 +212,6 @@ presented in Table~\ref{tab:features}.
 
 \begin{table}[h]
 \centering
-\caption{Top 5 Features by XGBoost Gain Importance}
-\label{tab:features}
 \begin{tabular}{clp{7.5cm}}
 \hline
 \hline
@@ -226,6 +224,8 @@ presented in Table~\ref{tab:features}.
   5 & \texttt{holiday\_x\_sales}       & Interaction term between holiday indicator and historical sales; captures holiday-driven sales lift by store \\ \hline
 \hline
 \end{tabular}
+\caption{Top 5 Features by XGBoost Gain Importance}
+\label{tab:features}
 \end{table}
 
 \section{Analysis and Discussion}
