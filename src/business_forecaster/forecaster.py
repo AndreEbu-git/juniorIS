@@ -13,6 +13,14 @@ from sklearn.ensemble import GradientBoostingRegressor
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def _safe_mape(actual: np.ndarray, predicted: np.ndarray) -> float:
+    """Calculate MAPE while safely handling zero actual values."""
+    actual = np.asarray(actual, dtype=float)
+    predicted = np.asarray(predicted, dtype=float)
+    denominator = np.where(actual == 0, np.nan, actual)
+    return float(np.nanmean(np.abs((actual - predicted) / denominator)) * 100)
+
 try:
     '''
     Why XGBoost? Business data rarely has linear patterns, Gradient Boosting captures complex interactions
@@ -32,7 +40,7 @@ class ForecastConfig:
     # stores all the user settings in one place
 
     target_column: str
-    feature_columns: List[str] = field(default_factory=List)
+    feature_columns: List[str] = field(default_factory=list)
     test_size: float = 0.2
     n_lags: int = 3
     forecast_periods: int = 6
@@ -70,21 +78,49 @@ class TimeSeriesForecaster:
 
     def __init__(self, config: ForecastConfig):
         self.config = config
-        self.model: Optional[xgb.XGBRegressor] = None
+        self.model: Optional[Any] = None
         self.scaler: Optional[StandardScaler] = None
         self.feature_names: List[str] = []
         self.training_data: Optional[pd.DataFrame] = None
+        self.frequency_delta: Optional[pd.Timedelta] = None
 
     def prepare_features(self, df: pd.DataFrame, date_column: str = 'date') -> pd.DataFrame:
 
         df_prep = df.copy()
 
+        actual_date_col = None
+
         if date_column in df_prep.columns:
-            df_prep[date_column] = pd.to_datetime(df_prep[date_column])
-            df_prep = df_prep.set_index(date_column)
+            actual_date_col = date_column
+        
+        else:
+            for col in df_prep.columns:
+                if col.lower() == date_column.lower():
+                    actual_date_col = col
+                    logger.info(f"Found date column: '{col}' (case-insensitive match)")
+                    break
+
+        if actual_date_col is None:
+            common_date_names = ['date', 'Date', 'DATE', 'datetime', 'DateTime', 'timestamp', 'Timestamp', 'time', 'Time']
+
+            for col in df_prep.columns:
+                if col in common_date_names:
+                    actual_date_col = col
+                    logger.info(f"Auto-detected date column: '{col}'")
+                    break
+            
+        if actual_date_col is not None:
+            df_prep[actual_date_col] = pd.to_datetime(df_prep[actual_date_col])
+            df_prep = df_prep.set_index(actual_date_col)
+            logger.info(f"Set '{actual_date_col}' as datetime index")
+        
+        else:
+            raise ValueError(f"Could not find date column. Available columns: {list(df_prep.columns)}")
 
         df_prep = df_prep.sort_index()
-        df_prep = df_prep.groupby(df_prep.index).sum()
+        df_prep = df_prep.groupby(df_prep.index).agg(
+            lambda x: x.mean() if np.issubdtype(x.dtype, np.number) else x.iloc[0]
+        )
 
         target = self.config.target_column
 
@@ -108,18 +144,19 @@ class TimeSeriesForecaster:
             df_prep['month_sin'] = np.sin(2 * np.pi * df_prep['month'] / 12)
             df_prep['month_cos'] = np.cos(2 * np.pi * df_prep['month'] / 12)
         
-        # Add feature interactions for specified feature columns
+        # Add lag features for user-provided business drivers
         if self.config.feature_columns:
             for feature in self.config.feature_columns:
                 if feature in df_prep.columns and feature != target:
-                    # Lag features for other variables
                     df_prep[f'{feature}_lag_1'] = df_prep[feature].shift(1)
-                    
-                    # Interaction with target
-                    if len(df_prep) > 1:
-                        df_prep[f'{feature}_x_{target}'] = df_prep[feature] * df_prep[target]
         
         df_prep = df_prep.dropna()
+
+        categorical_cols = df_prep.select_dtypes(include=['object', 'category']).columns
+        categorical_cols = [col for col in categorical_cols if col != self.config.target_column]
+
+        if len(categorical_cols) > 0:
+            df_prep = pd.get_dummies(df_prep, columns=categorical_cols, drop_first=True)
         
         logger.info(f"Created {len(df_prep.columns)} features from {len(df.columns)} original columns")
         
@@ -148,6 +185,7 @@ class TimeSeriesForecaster:
         y = df_features[target]
 
         self.training_data = df_features.copy()
+        self.frequency_delta = self._infer_time_delta(df_features.index)
         '''
         This is Time-Series Split not random split. It simulates real forecsting-predict future based on past
         bet for time series forecasting
@@ -204,8 +242,8 @@ class TimeSeriesForecaster:
             'test_mae': mean_absolute_error(y_test, y_test_pred),
             'train_r2': r2_score(y_train, y_train_pred),
             'test_r2': r2_score(y_test, y_test_pred),
-            'train_mape': np.mean(np.abs((y_train - y_train_pred) / y_train)) * 100,
-            'test_mape': np.mean(np.abs((y_test - y_test_pred) / y_test)) * 100
+            'train_mape': _safe_mape(y_train, y_train_pred),
+            'test_mape': _safe_mape(y_test, y_test_pred)
         }
         
         logger.info(f"Model trained. Test RMSE: {metrics['test_rmse']:.2f}, Test R²: {metrics['test_r2']:.3f}")
@@ -250,110 +288,108 @@ class TimeSeriesForecaster:
         )
         
         return result
+
+    def _infer_time_delta(self, date_index: pd.Index) -> pd.Timedelta:
+        """Infer a reasonable step between forecast periods."""
+        if len(date_index) <= 1:
+            return pd.Timedelta(days=30)
+
+        freq = pd.infer_freq(date_index)
+        if freq is not None:
+            try:
+                offset = pd.tseries.frequencies.to_offset(freq)
+                last_date = date_index[-1]
+                return (last_date + offset) - last_date
+            except Exception:
+                pass
+
+        date_diffs = date_index[1:] - date_index[:-1]
+        return pd.Timedelta(np.median([d.total_seconds() for d in date_diffs]), unit='s')
+
+    def _build_future_feature_row(
+        self,
+        next_date: pd.Timestamp,
+        target_history: List[float],
+        exogenous_values: Optional[Dict[str, float]] = None
+    ) -> pd.DataFrame:
+        """Construct a future feature row from lagged history and stable driver assumptions."""
+        exogenous_values = exogenous_values or {}
+        feature_row = pd.DataFrame(index=[next_date])
+        target = self.config.target_column
+
+        if self.config.use_time_features:
+            feature_row['month'] = next_date.month
+            feature_row['quarter'] = next_date.quarter
+            feature_row['year'] = next_date.year
+            feature_row['day_of_year'] = next_date.dayofyear
+            feature_row['month_sin'] = np.sin(2 * np.pi * next_date.month / 12)
+            feature_row['month_cos'] = np.cos(2 * np.pi * next_date.month / 12)
+
+        for lag in range(1, self.config.n_lags + 1):
+            history_idx = -lag
+            lag_value = target_history[history_idx] if len(target_history) >= lag else target_history[0]
+            feature_row[f'{target}_lag_{lag}'] = lag_value
+
+        recent_window = target_history[-3:] if len(target_history) >= 3 else target_history
+        feature_row[f'{target}_rolling_mean_3'] = float(np.mean(recent_window))
+        feature_row[f'{target}_rolling_std_3'] = float(np.std(recent_window)) if len(recent_window) > 1 else 0.0
+
+        last_known = self.training_data.iloc[-1] if self.training_data is not None else pd.Series(dtype=float)
+
+        for col in self.feature_names:
+            if col in feature_row.columns:
+                continue
+
+            if col in exogenous_values:
+                feature_row[col] = exogenous_values[col]
+            elif col.endswith('_lag_1'):
+                base_feature = col[:-6]
+                feature_row[col] = exogenous_values.get(
+                    base_feature,
+                    last_known.get(base_feature, last_known.get(col, 0.0))
+                )
+            elif col in last_known.index:
+                feature_row[col] = last_known[col]
+            else:
+                feature_row[col] = 0.0
+
+        return feature_row[self.feature_names]
+
+    def _predict_feature_row(self, feature_row: pd.DataFrame) -> float:
+        """Generate a prediction from a prepared feature row."""
+        if self.model is None:
+            raise ValueError("Model must be trained before generating predictions")
+
+        if self.scaler is not None:
+            feature_scaled = self.scaler.transform(feature_row)
+        else:
+            feature_scaled = feature_row.values
+
+        return float(self.model.predict(feature_scaled)[0])
     
     def generate_future_predictions(self, df_features: pd.DataFrame) -> pd.DataFrame:
 
         if self.model is None:
             raise ValueError("Model must be trained before generating predictions")
         
-        target = self.config.target_column
         future_dates = []
         future_values = []
-        
-        # Get the last date and infer frequency
         last_date = df_features.index[-1]
-        if len(df_features) > 1:
-            freq = pd.infer_freq(df_features.index)
-            if freq is None:
-                # Fallback: calculate median difference
-                date_diffs = df_features.index[1:] - df_features.index[:-1]
-                
-                median_diff = pd.Timedelta(np.median([d.total_seconds() for d in date_diffs]), unit='s')
-            else:
-                # Convert frequency to timedelta
-                try:
-                    offset = pd.tseries.frequencies.to_offset(freq)
-                    # Apply offset to get the difference
-                    test_date = df_features.index[-1]
-                    next_test_date = test_date + offset
-                    median_diff = next_test_date - test_date
-                except:
-                    # Fallback if offset conversion fails
-                    date_diffs = df_features.index[1:] - df_features.index[:-1]
-                    median_diff = pd.Timedelta(np.median([d.total_seconds() for d in date_diffs]), unit='s')
-        else:
-            median_diff = pd.Timedelta(days=30)  # Default to monthly
-        
-        # Use last known values to bootstrap predictions
-        last_row = df_features.iloc[-1:].copy()
+        step_delta = self.frequency_delta or self._infer_time_delta(df_features.index)
+        target_history = df_features[self.config.target_column].tolist()
+        exogenous_values = {
+            feature: float(df_features[feature].iloc[-1])
+            for feature in self.config.feature_columns
+            if feature in df_features.columns
+        }
         
         for step in range(1, self.config.forecast_periods + 1):
-            next_date = last_date + median_diff * step
-            print(f"Next date: {next_date}, step: {step}, median_diff: {median_diff}")
-            
-            # Create feature row for prediction
-            feature_row = pd.DataFrame(index=[next_date])
-            
-            # Add time features
-            if self.config.use_time_features:
-                feature_row['month'] = next_date.month
-                feature_row['quarter'] = next_date.quarter
-                feature_row['year'] = next_date.year
-                feature_row['day_of_year'] = next_date.dayofyear
-                feature_row['month_sin'] = np.sin(2 * np.pi * next_date.month / 12)
-                feature_row['month_cos'] = np.cos(2 * np.pi * next_date.month / 12)
-            
-            # Use lag values from previous predictions/actuals
-            for lag in range(1, self.config.n_lags + 1):
-                if step <= lag:
-                    # Use actual historical data
-                    lag_idx = -lag + step - 1
-                    if lag_idx >= -len(df_features):
-                        feature_row[f'{target}_lag_{lag}'] = df_features[target].iloc[lag_idx]
-                    else:
-                        feature_row[f'{target}_lag_{lag}'] = df_features[target].iloc[0]
-                else:
-                    # Use predicted values
-                    feature_row[f'{target}_lag_{lag}'] = future_values[-(lag - step + 1)]
-            
-            # Add rolling statistics (simplified for future predictions)
-            if len(future_values) >= 3:
-                recent_vals = future_values[-3:]
-            else:
-                recent_vals = list(df_features[target].tail(3)) + future_values
-                recent_vals = recent_vals[-3:]
-            
-            feature_row[f'{target}_rolling_mean_3'] = np.mean(recent_vals)
-            feature_row[f'{target}_rolling_std_3'] = np.std(recent_vals) if len(recent_vals) > 1 else 0
-            
-            # Add other feature columns (carry forward last known values)
-            for col in self.feature_names:
-                if col not in feature_row.columns:
-                    if col in df_features.columns:
-                        feature_row[col] = df_features[col].iloc[-1]
-                    else:
-                        feature_row[col] = 0  # Fallback
-            
-            # Ensure all required features are present
-            for col in self.feature_names:
-                if col not in feature_row.columns:
-                    feature_row[col] = 0
-            
-            # Reorder columns to match training
-            feature_row = feature_row[self.feature_names]
-            
-            # Scale if needed
-            if self.scaler is not None:
-                feature_scaled = self.scaler.transform(feature_row)
-            else:
-                feature_scaled = feature_row.values
-            
-            # Predict
-            pred_value = self.model.predict(feature_scaled)[0]
-            
+            next_date = last_date + step_delta * step
+            feature_row = self._build_future_feature_row(next_date, target_history, exogenous_values)
+            pred_value = self._predict_feature_row(feature_row)
             future_dates.append(next_date)
             future_values.append(pred_value)
-            print(f"Future dates: {future_dates}")
+            target_history.append(pred_value)
         
         future_df = pd.DataFrame({
             'date': future_dates,
@@ -419,7 +455,7 @@ def calculate_forecast_metrics(actual: np.ndarray, predicted: np.ndarray) -> Dic
         'rmse': np.sqrt(mean_squared_error(actual, predicted)),
         'mae': mean_absolute_error(actual, predicted),
         'r2': r2_score(actual, predicted),
-        'mape': np.mean(np.abs((actual - predicted) / actual)) * 100,
+        'mape': _safe_mape(actual, predicted),
         'max_error': np.max(np.abs(actual - predicted)),
         'mean_actual': np.mean(actual),
         'mean_predicted': np.mean(predicted)
@@ -443,6 +479,14 @@ def create_forecast_summary(result: ForecastResult) -> Dict[str, Any]:
         'training_samples': len(result.predictions[result.predictions['split'] == 'train']),
         'test_samples': len(result.predictions[result.predictions['split'] == 'test']),
         'forecast_periods': len(result.future_predictions),
+        'forecast_mean': float(result.future_predictions['predicted'].mean()),
+        'forecast_min': float(result.future_predictions['predicted'].min()),
+        'forecast_max': float(result.future_predictions['predicted'].max()),
+        'last_actual': float(result.predictions['actual'].iloc[-1]),
+        'average_forecast_change_pct': float(
+            ((result.future_predictions['predicted'].mean() - result.predictions['actual'].iloc[-1])
+             / result.predictions['actual'].iloc[-1]) * 100
+        ) if result.predictions['actual'].iloc[-1] != 0 else 0.0,
         'model_performance': {
             'test_rmse': f"{result.metrics['test_rmse']:.2f}",
             'test_mae': f"{result.metrics['test_mae']:.2f}",

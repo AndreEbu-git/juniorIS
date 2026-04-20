@@ -25,6 +25,8 @@ if 'current_df' not in st.session_state:
     st.session_state.current_df = None
 if 'forecast_result' not in st.session_state:
     st.session_state.forecast_result = None
+if 'forecaster' not in st.session_state:
+    st.session_state.forecaster = None
 
 
 st.title("Dynamic Business Performance Forecaster")
@@ -230,10 +232,28 @@ with tab3:
                     
                     # Initialize and train forecaster
                     forecaster = TimeSeriesForecaster(config)
-                    result = forecaster.train(forecast_df, 'date')
+                    date_column = None
+                    possible_date_names = ['date', 'Date', 'DATE', 'datetime', 'DateTime', 
+                                        'timestamp', 'Timestamp', 'time', 'Time']
+
+                    for col in forecast_df.columns:
+                        if col in possible_date_names:
+                            date_column = col
+                            st.info(f"📅 Auto-detected date column: '{col}'")
+                            break
+
+                    if date_column is None:
+                        # Let user select
+                        date_column = st.selectbox(
+                            "Select Date Column",
+                            forecast_df.columns.tolist(),
+                            help="Which column contains your dates?"
+                        )
+                    result = forecaster.train(forecast_df, date_column)
                     
                     # Store result in session state
                     st.session_state.forecast_result = result
+                    st.session_state.forecaster = forecaster
                     
                     st.success("✅ Model trained successfully!")
                     
@@ -244,6 +264,11 @@ with tab3:
         # Display results if available
         if st.session_state.forecast_result is not None:
             result = st.session_state.forecast_result
+            forecaster = st.session_state.get("forecaster", None)
+            summary = create_forecast_summary(result)
+            latest_actual = summary['last_actual']
+            avg_change_pct = summary['average_forecast_change_pct']
+            future_df = result.future_predictions.copy()
             
             st.markdown("---")
             st.subheader("📊 Forecast Results")
@@ -278,9 +303,47 @@ with tab3:
                     f"{result.metrics['test_mape']:.1f}%",
                     help="Mean Absolute Percentage Error"
                 )
+
+            st.markdown("### Forecast Interpretation")
+
+            insight_col1, insight_col2, insight_col3 = st.columns(3)
+
+            with insight_col1:
+                st.metric("Latest Actual", f"{latest_actual:,.2f}")
+
+            with insight_col2:
+                st.metric(
+                    "Average Forecast",
+                    f"{summary['forecast_mean']:,.2f}",
+                    delta=f"{avg_change_pct:+.1f}% vs latest actual"
+                )
+
+            with insight_col3:
+                st.metric(
+                    "Forecast Range",
+                    f"{summary['forecast_max'] - summary['forecast_min']:,.2f}",
+                    help="Difference between the highest and lowest projected forecast values"
+                )
+
+            performance_message = "strong" if result.metrics['test_r2'] >= 0.7 else "moderate" if result.metrics['test_r2'] >= 0.4 else "limited"
+            error_message = "low" if result.metrics['test_mape'] <= 10 else "moderate" if result.metrics['test_mape'] <= 20 else "high"
+            top_driver_text = ", ".join(
+                feature.replace('_lag_1', ' (previous period)')
+                for feature in summary['top_features'][:3]
+            )
+
+            st.info(
+                f"This model shows {performance_message} fit on the held-out test data. "
+                f"The next {result.config.forecast_periods} forecast periods average {summary['forecast_mean']:,.2f}, "
+                f"which is {avg_change_pct:+.1f}% compared with the latest observed {summary['target_variable']} value. "
+                f"Expected forecast error is {error_message} based on a test MAPE of {result.metrics['test_mape']:.1f}%."
+            )
+
+            if top_driver_text:
+                st.caption(f"Most influential drivers in this run: {top_driver_text}.")
             
             # Visualization tabs
-            viz_tab1, viz_tab2, viz_tab3 = st.tabs(["📈 Predictions", "🔮 Future Forecast", "⭐ Feature Importance"])
+            viz_tab1, viz_tab2, viz_tab3, viz_tab4 = st.tabs(["Predictions", "Future Forecast", "Feature Importance", "Scenario Analysis"])
             
             with viz_tab1:
                 st.markdown("### Historical Predictions vs Actuals")
@@ -338,10 +401,7 @@ with tab3:
             
             with viz_tab2:
                 st.markdown("### Future Forecast")
-                
-                future_df = result.future_predictions.copy()
-                
-                
+
                 # Combine historical actual and future predictions
                 fig = go.Figure()
                 
@@ -380,6 +440,10 @@ with tab3:
                 forecast_display['date'] = forecast_display['date'].dt.strftime('%Y-%m-%d')
                 forecast_display['predicted'] = forecast_display['predicted'].round(2)
                 st.dataframe(forecast_display, use_container_width=True)
+                st.caption(
+                    f"Projected values span from {summary['forecast_min']:,.2f} to {summary['forecast_max']:,.2f} "
+                    f"between {summary['forecast_range']['start']} and {summary['forecast_range']['end']}."
+                )
             
             with viz_tab3:
                 st.markdown("### Feature Importance")
@@ -416,12 +480,216 @@ with tab3:
                         'Importance': result.feature_importance.values()
                     })
                     st.dataframe(importance_df, use_container_width=True)
+
+            with viz_tab4:
+                st.markdown("### Scenario Analysis - Waht-If Simulations")
+                st.write("Adjust input variables to see how predictions change")
+
+                # Import scenario simulator
+                from scenario_simulator import ScenarioSimulator, create_preset_scenarios
+                forecaster = st.session_state.get("forecaster")
+                simulator = None
+
+                # Initialize simulator
+                if forecaster is None:
+                    st.error("Forecaster not available. Please train the model first")
+
+                else:
+                    simulator = ScenarioSimulator(forecaster, result)
+                
+
+                # Create two columns: controls and results
+                control_col, result_col = st.columns([1,2])
+
+                with control_col:
+                    st.subheader("scenario Controls")
+                    scenario_features = result.config.feature_columns
+
+                    # Preset scenarios
+                    st.markdown("**Quick Presets:**")
+                    presets = create_preset_scenarios(scenario_features)
+
+                    selected_preset = st.selectbox(
+                        "Choose a preset scenario",
+                        ["Custom"] + [p.name for p in presets],
+                        help="Pre-configured scenarios for quick analysis"
+                    )
+
+                    # Custom adjustments
+                    st.markdown("**CUstom Adjustments:**")
+                    st.caption("Adjust each feature (1.0 = no change, 1.2 = +20%, 0.8 = -20%)")
+
+                    adjustments = {}
+
+                    # If preset selected, use those values as defaults
+                    if selected_preset != "Custom":
+                        preset_config = next(p for p in presets if p.name == selected_preset)
+                        default_adjustments = preset_config.adjustments
+
+                    else:
+                        default_adjustments = {col: 1.0 for col in scenario_features}
+
+                    # Create sliders for each feature
+                    for feature in scenario_features:
+                        default_val = default_adjustments.get(feature, 1.0)
+
+                        adjustment = st.slider(
+                            f"{feature}",
+                            min_value=0.5,
+                            max_value=2.0,
+                            value=float(default_val),
+                            step=0.05,
+                            format="%.2fx",
+                            help=f"Multiplier for {feature}, Current: {default_val:.2f}x"
+                        )
+                        adjustments[feature] = adjustment
+
+                    # Scenario name
+                    scenario_name = st.text_input(
+                        "Scenario Name",
+                        value=selected_preset if selected_preset != "Custom" else "My scenario"
+                    )
+
+                    # Run  button
+                    run_scenario = st.button("Run Scenario", type="primary")
+
+            with result_col:
+                st.subheader("Scenario Results")
+
+                # Run scenario when button clicked
+                if run_scenario:
+                    if simulator is None:
+                        st.error("Scenario simulator is not available. Please retrain the model and try again.")
+                    else:
+                        with st.spinner("Running scenario simulation..."):
+                            # Create scenario config
+                            from scenario_simulator import ScenarioConfig
+
+                            scenario_config = ScenarioConfig(
+                                name=scenario_name,
+                                adjustments=adjustments,
+                                description=f"Custom scenario with adjusted inputs"
+                            )
+
+                            # Run simulation
+                            scenario_result = simulator.run_scenario(scenario_config)
+
+                            # Store in session state
+                            if 'scenarios' not in st.session_state:
+                                st.session_state.scenarios = {}
+                            st.session_state.scenarios[scenario_name] = scenario_result
+
+                            st.success(f"Scenario '{scenario_name}' complete!")
+
+                # Display results if scenarios exist
+                if 'scenarios' in st.session_state and len(st.session_state.scenarios) > 0:
+                    # Impact summary
+                    st.markdown("#### Impact Summary")
+
+                    latest_scenario = list(st.session_state.scenarios.values())[-1]
+                    impact = latest_scenario.impact_summary
+
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    with col1:
+                        st.metric(
+                            "Base Average",
+                            f"${impact['base_average']:,.0f}"
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Scenario Average",
+                            f"${impact['scenario_average']:,.0f}",
+                            delta=f"{impact['average_change_pct']:+.1f}%"
+                        )
+
+                    with col3:
+                            st.metric(
+                                "Base Total",
+                                f"${impact['base_total']:,.0f}"
+                            )
+                        
+                    with col4:
+                        st.metric(
+                            "Scenario Total",
+                            f"${impact['scenario_total']:,.0f}",
+                            delta=f"{impact['total_change_pct']:+.1f}%"
+                        )
+
+                    if latest_scenario.adjusted_drivers:
+                        adjusted_driver_text = ", ".join(
+                            f"{name}={value:,.2f}" for name, value in latest_scenario.adjusted_drivers.items()
+                        )
+                        st.caption(f"Scenario assumptions applied to the latest known driver values: {adjusted_driver_text}.")
+
+                    st.info(
+                        f"Compared with the base forecast, this scenario changes the average prediction by "
+                        f"{impact['average_change_pct']:+.1f}% and the total forecast by {impact['total_change_pct']:+.1f}%. "
+                        f"The largest upside shift is {impact['peak_change']:,.2f}, while the largest downside shift is "
+                        f"{impact['trough_change']:,.2f}."
+                    )
+
+                    # Comparison chart
+                    st.markdown("#### Base vs Scenario Comparison")
+
+                    fig = go.Figure()
+
+                    # Base case
+                    fig.add_trace(go.Scatter(
+                        x=result.future_predictions['date'],
+                        y=result.future_predictions['predicted'],
+                        mode='lines+markers',
+                        name='Base Case',
+                        line=dict(color='blue', width=2)
+                    ))
+
+                    # Scenario
+                    fig.add_trace(go.Scatter(
+                        x=latest_scenario.predictions['date'],
+                        y=latest_scenario.predictions['predicted'],
+                        mode='lines+markers',
+                        name=latest_scenario.scenario_name,
+                        line=dict(color='orange', width=2, dash='dash')
+                    ))
+
+                    fig.update_layout(
+                        title=f"Forecast Comparison: Base v {latest_scenario.scenario_name}",
+                        xaxis_title='Date',
+                        yaxis_title=target_var,
+                        hovermode='x unified',
+                        height=400
+                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
+
+                    # Scenario comparison table
+                    if len(st.session_state.scenarios) > 1:
+                        st.markdown("#### All Scenarios Comparison")
+
+                        comparison_df = simulator.compare_scenarios(
+                            list(st.session_state.scenarios.keys())
+                        )
+
+                        # Format the dataframe
+                        styled_df = comparison_df.copy()
+                        styled_df['Average Prediction'] = styled_df['Average Prediction'].apply(lambda x: f"${x:,.0f}")
+                        styled_df['Change from Base'] = styled_df['Change from Base'].apply(lambda x: f"${x:,.0f}")
+                        styled_df['Change %'] = styled_df['Change %'].apply(lambda x: f"{x:+.2f}%")
+                            
+                        st.dataframe(styled_df, use_container_width=True)
+
+                    # Clear scenarios button
+                    if st.button("Clear All Scenarios"):
+                        st.session_state.scenarios = {}
+                        st.rerun()
+
+                else:
+                    st.info("Adjust the sliders and clici=k 'Run Scenario' to see results" ) 
             
             # Model summary
             st.markdown("---")
             st.subheader("📝 Model Summary")
-            
-            summary = create_forecast_summary(result)
             
             col1, col2 = st.columns(2)
             
