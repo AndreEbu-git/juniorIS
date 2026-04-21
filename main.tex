@@ -159,6 +159,15 @@ such as, “Advertising expenditure is the strongest driver of your projected re
 
 \begin{figure}[h] 
   \begin{center}
+    \includegraphics[width=16cm]{imgs/business dashboard.png}
+    \caption{Dashboard showing the main display with the side tabs.}
+    \label{fig: business dashboard}
+  \end{center}
+\end{figure}
+
+
+\begin{figure}[h] 
+  \begin{center}
     \includegraphics[width=16cm]{imgs/feature importance.png}
     \caption{Model Performance Summary and Feature Importance}
     \label{fig: feature importance}
@@ -167,13 +176,7 @@ such as, “Advertising expenditure is the strongest driver of your projected re
 
 \textbf{Interactive Dashboard.} The front-end dashboard for this project is constructed using Streamlit. In the interface, users can load the dataset, set the target variable, and use a sliding scale to modify the values of the input features in real time. Whenever a slider is moved, the system calls the model's prediction endpoint, and both the forecast and a plain‑language explanation of that forecast update instantly. The dashboard also shows the feature importance chart and key performance metrics for the model.
 
-\begin{figure}[h] 
-  \begin{center}
-    \includegraphics[width=16cm]{imgs/business dashboard.png}
-    \caption{Dashboard showing the main display with the side tabs.}
-    \label{fig: business dashboard}
-  \end{center}
-\end{figure}
+
 
 
 \section{Results}
@@ -199,7 +202,6 @@ The target variable was \texttt{sales}, and the input features used for modeling
 configured for scenario planning evaluation. Before the model was trained, the preprocessing pipeline automatically created several additional features from the raw data. 
 These included lag features (past sales values), and rolling statistics (moving averages or sums). These engineered features formed the basis of the model's predictive ability.
 
-\subsection{Predictive Performance}
 The trained XGBoost model was evaluated on a held-out test set comprising 20\% of the
 dataset. 
 Table~\ref{tab:results} summarizes the evaluation metrics.
@@ -225,7 +227,6 @@ that predictions deviate from actual sales values by less than one percent on av
 which represents strong forecasting accuracy for a general-purpose, domain-agnostic
 system. The RMSE of 19.80 and MAE of 12.73 indicate the typical size of prediction errors in the same units as the sales values themselves. The difference between these two metrics suggests that the model's errors are fairly stable, with very few extreme mistakes that would make the RMSE much larger than the MAE.
 
-\subsection{Feature Importance Analysis}
 After the model was trained, feature importance scores were computed using XGBoost's
 gain metric. This metric measures, on average, how much each feature helps reduce prediction error every time it is used to make a split in a decision tree. The top five most influential features are
 presented in Table~\ref{tab:features}.
@@ -270,7 +271,6 @@ one fixed prediction, users could analyze possible future scenarios that would b
 an actionable part of the decision-making process. In this sense, the proposed system can
 be considered data-driven strategic foresight discussed by Tai and Wang \cite{10.1145/3624875.3624885}.
 
-\subsection{Limitations}
 
 \section{Conclusion}
 The Dynamic Business Performance Forecaster is a general-purpose, interactive analytics platform that combines machine learning model-based prediction, feature importance identification,
