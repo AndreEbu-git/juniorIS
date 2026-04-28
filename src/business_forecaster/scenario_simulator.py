@@ -13,6 +13,7 @@ class ScenarioConfig:
     name: str # e.g, "Optimistic", "Pessimistic", "Base Case"
     adjustments: Dict[str, float] # e.g., {'marketing_spend': 1.20} = +20%
     description: str = " "
+    adjustment_mode: str = "multiplier"
 
     def apply_to_value(self, feature_name: str, original_value: float) -> float:
         """
@@ -27,8 +28,10 @@ class ScenarioConfig:
         """
 
         if feature_name in self.adjustments:
-            multiplier = self.adjustments[feature_name]
-            return original_value * multiplier
+            adjustment_value = self.adjustments[feature_name]
+            if self.adjustment_mode == "absolute":
+                return adjustment_value
+            return original_value * adjustment_value
         return original_value
     
 @dataclass

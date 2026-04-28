@@ -122,6 +122,17 @@ class TimeSeriesForecaster:
             lambda x: x.mean() if np.issubdtype(x.dtype, np.number) else x.iloc[0]
         )
 
+        # Convert any remaining datetime columns into numeric calendar features.
+        # Raw datetime dtypes cannot be passed directly to sklearn/XGBoost feature matrices.
+        datetime_cols = df_prep.select_dtypes(include=['datetime64[ns]', 'datetimetz']).columns.tolist()
+        for col in datetime_cols:
+            df_prep[f'{col}_year'] = df_prep[col].dt.year
+            df_prep[f'{col}_month'] = df_prep[col].dt.month
+            df_prep[f'{col}_day'] = df_prep[col].dt.day
+            df_prep[f'{col}_dayofweek'] = df_prep[col].dt.dayofweek
+        if datetime_cols:
+            df_prep = df_prep.drop(columns=datetime_cols)
+
         target = self.config.target_column
 
         for lag in range(1, self.config.n_lags + 1):

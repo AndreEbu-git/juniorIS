@@ -10,6 +10,59 @@ sys.path.append(str(Path(__file__).parent))
 
 from dataloader import DataLoader, DataPreprocessor, DataValidator
 from forecaster import TimeSeriesForecaster, ForecastConfig, create_forecast_summary
+from llm_explainer import LLMExplanationService
+
+
+def _get_date_candidate_columns(df: pd.DataFrame) -> list[str]:
+    date_candidates = [
+        col for col in df.columns
+        if pd.api.types.is_datetime64_any_dtype(df[col])
+    ]
+
+    if date_candidates:
+        return date_candidates
+
+    common_date_names = ['date', 'datetime', 'timestamp', 'time']
+    return [col for col in df.columns if col.lower() in common_date_names]
+
+
+def _configure_dataset_scope(df: pd.DataFrame) -> tuple[pd.DataFrame, str | None]:
+    scoped_df = df.copy()
+    date_candidates = _get_date_candidate_columns(scoped_df)
+    selected_date_column = None
+
+    with st.expander("Optional Dataset Scope", expanded=False):
+        st.caption("Leave this collapsed to use the dataset as-is, or open it if you want to exclude specific rows.")
+
+        if date_candidates:
+            selected_date_column = st.selectbox(
+                "Date Column",
+                date_candidates,
+                help="This column will be used to order the time series for forecasting."
+            )
+        else:
+            st.warning("No date column was auto-detected. Please review the uploaded data format.")
+
+        st.markdown("**Row Inclusion**")
+        st.caption("Uncheck rows you do not want included in the forecast training set.")
+
+        row_editor_df = scoped_df.reset_index().rename(columns={'index': 'Original Row'})
+        row_editor_df.insert(0, 'Include', True)
+        edited_rows = st.data_editor(
+            row_editor_df,
+            hide_index=True,
+            disabled=[col for col in row_editor_df.columns if col != 'Include'],
+            use_container_width=True,
+            height=250,
+            key="forecast_row_selector"
+        )
+
+        selected_row_ids = edited_rows.loc[edited_rows['Include'], 'Original Row'].tolist()
+        scoped_df = scoped_df.loc[selected_row_ids].copy()
+
+        st.caption(f"Selected {len(scoped_df)} rows for forecasting.")
+
+    return scoped_df, selected_date_column
 
 
 # Title
@@ -27,13 +80,15 @@ if 'forecast_result' not in st.session_state:
     st.session_state.forecast_result = None
 if 'forecaster' not in st.session_state:
     st.session_state.forecaster = None
+if 'llm_service' not in st.session_state:
+    st.session_state.llm_service = LLMExplanationService()
 
 
 st.title("Dynamic Business Performance Forecaster")
 st.markdown("Upload your business data to start forecasting and scenario planning")
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📁 Upload Dataset", "📋 Data Summary", "🔮 Forecasting", "Manual Entry"])
+tab1, tab2, tab3 = st.tabs(["📁 Upload Dataset", "📋 Data Summary", "🔮 Forecasting"])
 
 # --- Feature 1: Load and Preprocess ---
 with tab1:
@@ -51,10 +106,14 @@ with tab1:
         try:
             if uploaded_file.name.endswith(".csv"):
                 df = pd.read_csv(uploaded_file)
-                st.session_state.current_df = df
 
             else:
                 df = pd.read_excel(uploaded_file)
+
+            preprocessor = DataPreprocessor()
+            df = preprocessor.auto_convert_numeric_strings(df)
+            df = preprocessor.detect_and_convert_dates(df)
+            st.session_state.current_df = df
 
             st.success(f" Successfully loaded {len(df)} rows")
 
@@ -75,6 +134,12 @@ with tab1:
                 with st.expander("⚠️ Data Quality Warnings"):
                     for warning in validator.validation_results['warnings']:
                         st.write(f"- {warning}")
+
+            transformations = preprocessor.get_transformation_summary()
+            if transformations:
+                with st.expander("Preprocessing Applied"):
+                    for transformation in transformations:
+                        st.write(f"- {transformation}")
 
             st.session_state['df'] = df
             st.success(f"Data loaded! Shape: {df.shape}")
@@ -145,7 +210,15 @@ with tab3:
         st.write("- Enter at least 10 historical data points manually")
     else:
         st.success(f"✅ Using {'uploaded dataset' if data_source == 'uploaded' else 'manually entered data'} ({len(forecast_df)} observations)")
-        
+        forecast_df, selected_date_column = _configure_dataset_scope(forecast_df)
+
+        if len(forecast_df) < 15:
+            st.warning(
+                f"The filtered dataset currently has {len(forecast_df)} rows. "
+                "Please include at least 15 rows for forecasting."
+            )
+            st.stop()
+
         # Configuration section
         st.subheader("⚙️ Model Configuration")
         
@@ -154,6 +227,16 @@ with tab3:
         with col1:
             # Select target variable
             numeric_cols = forecast_df.select_dtypes(include=[np.number]).columns.tolist()
+
+            if len(numeric_cols) == 0:
+                st.error("No numeric columns are available after preprocessing and filtering.")
+                st.stop()
+
+            if len(numeric_cols) < 2:
+                st.warning(
+                    "This dataset currently has limited numeric columns. "
+                    "Scenario analysis needs a numeric target and at least one numeric driver column."
+                )
             
             target_var = st.selectbox(
                 "Target Variable (what to forecast)*",
@@ -232,28 +315,17 @@ with tab3:
                     
                     # Initialize and train forecaster
                     forecaster = TimeSeriesForecaster(config)
-                    date_column = None
-                    possible_date_names = ['date', 'Date', 'DATE', 'datetime', 'DateTime', 
-                                        'timestamp', 'Timestamp', 'time', 'Time']
+                    if selected_date_column is None:
+                        raise ValueError("A date column is required to train the forecasting model.")
 
-                    for col in forecast_df.columns:
-                        if col in possible_date_names:
-                            date_column = col
-                            st.info(f"📅 Auto-detected date column: '{col}'")
-                            break
-
-                    if date_column is None:
-                        # Let user select
-                        date_column = st.selectbox(
-                            "Select Date Column",
-                            forecast_df.columns.tolist(),
-                            help="Which column contains your dates?"
-                        )
-                    result = forecaster.train(forecast_df, date_column)
+                    result = forecaster.train(forecast_df, selected_date_column)
                     
                     # Store result in session state
                     st.session_state.forecast_result = result
                     st.session_state.forecaster = forecaster
+                    st.session_state.scenarios = {}
+                    st.session_state.pop("forecast_explanation", None)
+                    st.session_state.pop("scenario_explanation", None)
                     
                     st.success("✅ Model trained successfully!")
                     
@@ -341,6 +413,22 @@ with tab3:
 
             if top_driver_text:
                 st.caption(f"Most influential drivers in this run: {top_driver_text}.")
+
+            st.markdown("### Natural Language Explanation")
+            llm_service = st.session_state.llm_service
+
+            if llm_service.is_configured():
+                st.caption("OpenAI API key detected. AI-generated explanations are available.")
+            else:
+                st.caption("No OpenAI API key detected yet. The app will use a built-in fallback explanation until one is added.")
+
+            if st.button("Generate AI Explanation"):
+                payload = llm_service.build_forecast_payload(result, summary)
+                with st.spinner("Generating explanation..."):
+                    st.session_state["forecast_explanation"] = llm_service.generate_explanation(payload)
+
+            if "forecast_explanation" in st.session_state:
+                st.write(st.session_state["forecast_explanation"])
             
             # Visualization tabs
             viz_tab1, viz_tab2, viz_tab3, viz_tab4 = st.tabs(["Predictions", "Future Forecast", "Feature Importance", "Scenario Analysis"])
@@ -482,7 +570,7 @@ with tab3:
                     st.dataframe(importance_df, use_container_width=True)
 
             with viz_tab4:
-                st.markdown("### Scenario Analysis - Waht-If Simulations")
+                st.markdown("### Scenario Analysis - What-If Simulations")
                 st.write("Adjust input variables to see how predictions change")
 
                 # Import scenario simulator
@@ -505,6 +593,12 @@ with tab3:
                     st.subheader("scenario Controls")
                     scenario_features = result.config.feature_columns
 
+                    if not scenario_features:
+                        st.info(
+                            "No scenario driver columns were selected in Model Configuration. "
+                            "Pick one or more numeric feature variables there to enable scenario sliders."
+                        )
+
                     # Preset scenarios
                     st.markdown("**Quick Presets:**")
                     presets = create_preset_scenarios(scenario_features)
@@ -516,10 +610,17 @@ with tab3:
                     )
 
                     # Custom adjustments
-                    st.markdown("**CUstom Adjustments:**")
-                    st.caption("Adjust each feature (1.0 = no change, 1.2 = +20%, 0.8 = -20%)")
+                    st.markdown("**Custom Adjustments:**")
+                    st.caption("Adjust each feature using either multipliers or direct numeric values.")
 
                     adjustments = {}
+                    last_known = forecaster.training_data.iloc[-1] if forecaster is not None else pd.Series(dtype=float)
+                    scenario_input_mode = st.radio(
+                        "Scenario Input Mode",
+                        ["Multiplier", "Direct values"],
+                        horizontal=True,
+                        help="Use multipliers for percentage-style changes or direct values for exact assumptions."
+                    )
 
                     # If preset selected, use those values as defaults
                     if selected_preset != "Custom":
@@ -529,20 +630,33 @@ with tab3:
                     else:
                         default_adjustments = {col: 1.0 for col in scenario_features}
 
-                    # Create sliders for each feature
+                    # Create controls for each feature
                     for feature in scenario_features:
                         default_val = default_adjustments.get(feature, 1.0)
+                        baseline_value = float(last_known.get(feature, 0.0))
 
-                        adjustment = st.slider(
-                            f"{feature}",
-                            min_value=0.5,
-                            max_value=2.0,
-                            value=float(default_val),
-                            step=0.05,
-                            format="%.2fx",
-                            help=f"Multiplier for {feature}, Current: {default_val:.2f}x"
-                        )
-                        adjustments[feature] = adjustment
+                        if scenario_input_mode == "Multiplier":
+                            adjustment = st.slider(
+                                f"{feature}",
+                                min_value=0.5,
+                                max_value=2.0,
+                                value=float(default_val),
+                                step=0.05,
+                                format="%.2fx",
+                                help=f"Multiplier for {feature}. Baseline value: {baseline_value:,.2f}",
+                                key=f"scenario_multiplier_{feature}"
+                            )
+                            adjustments[feature] = adjustment
+                        else:
+                            suggested_value = baseline_value * float(default_val)
+                            adjustment = st.number_input(
+                                f"{feature}",
+                                value=float(suggested_value),
+                                step=max(abs(baseline_value) * 0.05, 1.0),
+                                help=f"Direct scenario value for {feature}. Baseline value: {baseline_value:,.2f}",
+                                key=f"scenario_absolute_{feature}"
+                            )
+                            adjustments[feature] = adjustment
 
                     # Scenario name
                     scenario_name = st.text_input(
@@ -568,7 +682,8 @@ with tab3:
                             scenario_config = ScenarioConfig(
                                 name=scenario_name,
                                 adjustments=adjustments,
-                                description=f"Custom scenario with adjusted inputs"
+                                description=f"Custom scenario with adjusted inputs",
+                                adjustment_mode="absolute" if scenario_input_mode == "Direct values" else "multiplier"
                             )
 
                             # Run simulation
@@ -630,6 +745,18 @@ with tab3:
                         f"{impact['trough_change']:,.2f}."
                     )
 
+                    if st.button("Explain Latest Scenario"):
+                        payload = st.session_state.llm_service.build_scenario_payload(
+                            result,
+                            summary,
+                            latest_scenario
+                        )
+                        with st.spinner("Generating scenario explanation..."):
+                            st.session_state["scenario_explanation"] = st.session_state.llm_service.generate_explanation(payload)
+
+                    if "scenario_explanation" in st.session_state:
+                        st.write(st.session_state["scenario_explanation"])
+
                     # Comparison chart
                     st.markdown("#### Base vs Scenario Comparison")
 
@@ -685,7 +812,7 @@ with tab3:
                         st.rerun()
 
                 else:
-                    st.info("Adjust the sliders and clici=k 'Run Scenario' to see results" ) 
+                    st.info("Adjust the sliders and click 'Run Scenario' to see results" ) 
             
             # Model summary
             st.markdown("---")

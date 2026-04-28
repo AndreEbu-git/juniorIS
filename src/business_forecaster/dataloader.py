@@ -318,6 +318,40 @@ class DataPreprocessor:
             self.transformations_applied.append(f"Converted to datetime: {', '.join(converted_cols)}")
         
         return df_copy
+
+    def auto_convert_numeric_strings(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Convert text columns containing currency-formatted or comma-formatted numbers.
+
+        Example: "$5,320" -> 5320
+        """
+        df_copy = df.copy()
+        converted_cols = []
+
+        for col in df_copy.select_dtypes(include=['object', 'string']).columns:
+            original_series = df_copy[col]
+            non_null_count = original_series.notna().sum()
+
+            if non_null_count == 0:
+                continue
+
+            cleaned = original_series.astype(str).str.strip()
+            cleaned = cleaned.str.replace(r'[\$,£€,]', '', regex=True)
+            cleaned = cleaned.str.replace(r'\(([^)]+)\)', r'-\1', regex=True)
+
+            converted = pd.to_numeric(cleaned, errors='coerce')
+            success_ratio = converted.notna().sum() / non_null_count
+
+            if success_ratio >= 0.8:
+                df_copy[col] = converted
+                converted_cols.append(col)
+
+        if converted_cols:
+            self.transformations_applied.append(
+                f"Converted numeric-like text columns: {', '.join(converted_cols)}"
+            )
+
+        return df_copy
     
     def remove_outliers(self, df: pd.DataFrame, columns: Optional[List[str]] = None, method: str = 'iqr', threshold: float = 1.5) -> pd.DataFrame:
         """
