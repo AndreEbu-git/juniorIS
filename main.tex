@@ -194,8 +194,8 @@ such as, “Advertising expenditure is the strongest driver of your projected re
 %  \label{fig:dijkstra}
 % \end{center}
 %\end{figure}
-The Dynamic Business Performance Forecaster was evaluated using a retail store sales
-dataset containing daily records across multiple store locations. The dataset included five
+The Dynamic Business Performance Forecaster was evaluated using a publicly available retail store sales
+dataset from kaggle containing daily records across multiple store locations. The dataset included five
 columns: \texttt{store}, \texttt{sales}, \texttt{holiday}, \texttt{promo}, and \texttt{date}.
 The target variable was \texttt{sales}, and the input features used for modeling were
 \texttt{store}, \texttt{promo}, and \texttt{holiday}. A forecast horizon of six periods was
@@ -204,7 +204,10 @@ These included lag features (past sales values), and rolling statistics (moving 
 
 The trained XGBoost model was evaluated on a held-out test set comprising 20\% of the
 dataset. 
-Table~\ref{tab:results} summarizes the evaluation metrics.
+Table~\ref{tab:results} summarizes the evaluation metrics. Root Mean Square Error (RMSE) measures the average magnitude of prediction errors by taking the square root of the mean os squared differences between predicted and actual values. It penalizes larger errors more heavily than smaller ones, making it sensitive to outliers. The model achieved an RMSE of 7.81, indicating that predictions deviate from actual sales values by approximately 7.81 units on average.
+Mean Absolute Error (MAE) measures the average absolute differnce between predicted and actual values. So an MAE of 5.68 confirms that the model's typical prediction error is under 6 sales units.
+Mean Absolute Percentage Error (MAPE) expresses prediction error as a percentage of the actual value, meaning you can assess accuracy in relative terms independent of the scale of the target variable. The MAPE of 2.27\% indicates that predictions deviate from actual sales by roughly two percent on average, this is goo accuracy for a domain independent system.
+The coefficient of determination ($R^2$) of 0.742 indicates that the model explains approximately 74.2\% of the variance in store sales 
 \begin{table}[b]
   
   \label{tab:results}
@@ -212,20 +215,16 @@ Table~\ref{tab:results} summarizes the evaluation metrics.
   \hline
   \textbf{Metric} & \textbf{Description} & \textbf{Value} \\
     \hline
-    RMSE  & Root Mean Squared Error      & 19.80  \\
-    MAE   & Mean Absolute Error          & 12.73  \\
-    MAPE  & Mean Absolute Percentage Error & 0.50\% \\
-    R2 & Coefficient of Determination & 0.983  \\
+    RMSE  & Root Mean Squared Error      & 7.81  \\
+    MAE   & Mean Absolute Error          & 5.68 \\
+    MAPE  & Mean Absolute Percentage Error & 2.27\% \\
+    R2 & Coefficient of Determination & 0.742  \\
     \hline
   \end{tabular}
   \centering
   \caption{XGBoost Model Evaluation Metrics on Held-Out Test Set}
 \end{table}
-The model achieved an R2 of 0.983, indicating that approximately 98.3\% of the
-variance in store sales is explained by the model. The low MAPE of 0.50\% confirms
-that predictions deviate from actual sales values by less than one percent on average,
-which represents strong forecasting accuracy for a general-purpose, domain-agnostic
-system. The RMSE of 19.80 and MAE of 12.73 indicate the typical size of prediction errors in the same units as the sales values themselves. The difference between these two metrics suggests that the model's errors are fairly stable, with very few extreme mistakes that would make the RMSE much larger than the MAE.
+
 
 After the model was trained, feature importance scores were computed using XGBoost's
 gain metric. This metric measures, on average, how much each feature helps reduce prediction error every time it is used to make a split in a decision tree. The top five most influential features are
