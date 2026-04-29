@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from io import BytesIO
-from datetime import datetime
 import sys
 from pathlib import Path
 
@@ -114,8 +112,6 @@ with tab1:
             df = preprocessor.auto_convert_numeric_strings(df)
             df = preprocessor.detect_and_convert_dates(df)
             st.session_state.current_df = df
-
-            st.success(f" Successfully loaded {len(df)} rows")
 
             # Start Basic preprocessing
             st.subheader("Data Validation")
@@ -590,7 +586,7 @@ with tab3:
                 control_col, result_col = st.columns([1,2])
 
                 with control_col:
-                    st.subheader("scenario Controls")
+                    st.subheader("Scenario Controls")
                     scenario_features = result.config.feature_columns
 
                     if not scenario_features:
@@ -664,7 +660,7 @@ with tab3:
                         value=selected_preset if selected_preset != "Custom" else "My scenario"
                     )
 
-                    # Run  button
+                    # Run button
                     run_scenario = st.button("Run Scenario", type="primary")
 
             with result_col:

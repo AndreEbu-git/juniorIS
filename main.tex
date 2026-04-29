@@ -89,7 +89,7 @@ There are enterprise tools such as Tableau, which offer visualization but lack M
 The project was guided by the following central research question:
 \textit{Can a general-purpose machine learning-based forecasting system provide accurate, interpretable, and accessible business performance predictions across diverse domains without requiring domain-specific customization?}
 
-To answer this question, an end-to-end interactive system was proposed and implemented. This work follows a design science research approach in which the main project, Dynamic Business Performance Forecaster, is both the focus and the tool used to conduct the study. Evaluation is based on the functional correctness, prediction accuracy, and usability of the system.
+To answer this question, an end-to-end interactive system was proposed and implemented. This work follows a tool-based research approach in which the main project, Dynamic Business Performance Forecaster, is both the focus and the tool used to conduct the study. Evaluation is based on the functional correctness, prediction accuracy, and usability of the system.
 
 \subsection{System Goals}
 The system was proposed to achieve four core objectives:
@@ -100,7 +100,7 @@ The system was proposed to achieve four core objectives:
   \item \textbf{Accessibility:} The system’s explanations and interface should be usable by individuals without a background in data science or machine learning.
 \end{enumerate}
 
-Instead of being specific to a particular domain, the system is designed to accept general-purpose structured tabula. For evaluation, the system is tested on a publicly available
+Instead of being specific to a particular domain, the system is designed to accept general-purpose structured tabular data. For evaluation, the system is tested on a publicly available
 retail store sales dataset containing daily records across multiple store locations. The dataset
 includes five columns: \texttt{store}, \texttt{sales}, \texttt{holiday}, \texttt{promo},
 and \texttt{date}. The target variable is \texttt{sales}; the input features selected for
@@ -109,7 +109,7 @@ include missing value imputation, categorical encoding, and min-max normalizatio
 numeric features. No specific feature engineering on the input datasets
 has been performed in order to preserve the system’s domain-independent design.
 
-The core predictive model selected for this task is XGBoost, also known as Extreme Gradient Boosting. XGBoost is an ensemble learning algorithm based on gradient-boosted decision trees. XGBoost has been selected due to its strong predictive performance, built-in feature importance scoring, computational efficiency, and robustness to outliers and missing values. An in-depth justification of this selection, along with a comparison to other potential models like linear regression, ARIMA, and LSTM networks, has been provided in detail in Section 4.
+The core predictive model selected for this task is XGBoost, also known as Extreme Gradient Boosting. XGBoost is an ensemble learning algorithm based on gradient-boosted decision trees. XGBoost has been selected due to its strong predictive performance, built-in feature importance scoring, computational efficiency, and robustness to outliers and missing values. An in-depth justification of this selection, along with a comparison to other potential models like linear regression, ARIMA (Autoregressive Integrated Moving Average), and LSTM (Long Short-Term Memory) networks, has been provided in detail in Section 4.
 
 The training of the selected model has been conducted in a typical supervised learning pipeline. In this paradigm, the dataset has been split into a training set and a test set in the proportion of 80:20. The model has been trained on the training set, and its performance has been evaluated on the test set using metrics like RMSE and ($R^2$).
 
@@ -281,6 +281,20 @@ The following threats to validity must be acknowledged. As for the internal vali
 using a few public data sets, and its applicability across all possible business domains cannot be guaranteed. Regarding the usability findings, there was no formal user study with SME participants which would provide stronger evidence of real-world accessibility.
 
 This work serves as a baseline for future ideas. First, the substitution of XGBoost with a time series model like the Temporal Fusion Transformer will broaden the scope of application to time series forecasting tasks. The Temporal Fusion Transformer (TFT) is a high-performance, attention-based deep learning model designed for multi-horizon time series forecasting, offering both high accuracy and interpretability. It combines LSTM-based local processing with self-attention to capture long-term dependencies, managing complex datasets with static, past-observed, and future-known inputs~\cite{fusion_Transformers}. Second, conducting a formal study with users who are small and medium enterprise (SME) owners or managers will generate empirical evidence about the usability and business impact of this system. Third, implementing an interface for ingesting live data from external API endpoints, such as market data or economic indicators, will take this forecaster a step closer towards the design proposed by Balbaa et al.~\cite{inproceedings}. Lastly, developing more advanced methods of explanation, including using SHAP (SHapley Additive exPlanations) values, can further enhance the quality of the generated explanations by the system.
+
+\appendix
+\section{Addendum: Use of Generative Artificial Intelligence}
+Generative artificial intelligence tools were used selectively to help in the planning and writing of this Independent Study project in supporting capacity. Their application was strictly confined to 
+brainstorming implementation options, explaining technical terminology, debugging support, light interface modifications, and editing individual sentences to enhance clarity and grammar (Grammarly). The tools were not used to generate the primary research outcome, produce any experimental outcomes/results, or create the forecast model method that is introduced in this thesis.
+During the software development process, ChatGPT and OpenAI Codex were utilized as interactive aids when building and improving the Dynamic Business Performance Forecaster. They were consulted in the same way as other forms of technical literature, forums, or code samples would have been. The prompts asked were brief, focused technical inquiries regarding Streamlit's function, debugging in Python, time series preprocessing, feature engineering, and API integrating.
+
+More specifically, AI was utilized for optimizing the user interface, enhancing the preprocessing pipeline for uploaded business datasets, and resolving issues related to the machine learning workflow. This included clarifying how to handle date columns and numeric-type columns, and how to avoid errors when datetime fields appeared alongside the numeric variables.
+Artificial intelligence was also used to implement the natural-language explanation module that connects the system to an external large language model through an API key.
+Furthermore, AI was used as a resource in interpreting Python error messages, understanding their causes, and suggesting methods for overcoming the problem. Some examples include resolving problems with loading environment variables from the local \texttt{.env} file. In each case, suggested solutions were reviewed, tested, revised, and manually integrated rather than being copied into the system without evaluation.
+
+On the writing side, AI in this paper was confined to the editing of sentences and making some explanations clearer. Grammarly and Chat GPT handled issues related to wording, grammar, and readability, but not the content itself, these revision tools were only viewed as editorial services.
+
+All the AI recommendations made were taken on an advisory basis. Every code modification, design decision, explanation, and piece of text adopted in this project was carefully scrutinized, revised where necessary, and verified before being accepted.  The forecasting architecture, implementation decisions, experimental evaluation, and interpretations presented in this thesis remain the responsibility of the author. The author therefore accepts full responsibility for the correctness, design, implementation, and written presentation of all components of this project.
 
 \bibliographystyle{acm}
 \bibliography{bibliography.bib}
