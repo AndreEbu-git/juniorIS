@@ -63,6 +63,80 @@ The system includes an optional LLM-based explanation layer.
 If an OpenAI API key is available, the app can generate AI-written forecast explanations.
 If no key is available, the app falls back to a built-in deterministic explanation.
 
+## Installation
+### 1. Clone the repository
+`git clone <your-repository-url>
+cd juniorIS`
+### 2. Create and activate a virtual environment
+`python -m venv .venv`
+
+Windows PowerShell:
+
+`.venv\Scripts\Activate.ps1`
+### 3. Install dependencies
+`pip install streamlit pandas numpy scikit-learn xgboost plotly openai python-dotenv`
+
+Running the Application
+From the project root, run:
+
+`streamlit run src/business_forecaster/app.py`
+
+Then open the local Streamlit URL shown in the terminal.
+
+Optional OpenAI Setup
+To enable AI-generated natural-language explanations, create a `.env` file in:
+
+`src/business_forecaster/.env`
+Add:
+
+`OPENAI_API_KEY=your_api_key_here`
+
+If the API key is missing, the explanation feature will still work using the built-in fallback explanation.
+
+### How to Use
+Launch the app with Streamlit.
+
+Upload a business dataset.
+
+Review validation feedback and preprocessing notes.
+
+Go to the Forecasting tab.
+
+Select:
+a target variable
+one or more predictor variables
+your preferred test set size
+forecast periods
+Train the model.
+Review forecast metrics, charts, and feature importance.
+Use the Scenario Analysis panel to test alternative assumptions.
+Generate an AI explanation if OpenAI access is configured.
+
+
+### Known Limitations
+Forecast quality depends heavily on the structure and quality of the uploaded dataset.
+
+The model currently works best with tabular time-series business data.
+
+Scenario analysis is limited to selected numeric driver columns.
+
+AI explanations require valid API access and available quota when using OpenAI.
+
+There is no live external API data ingestion yet.
+
+### Future Work
+Potential future improvements include:
+
+Live business or market data ingestion.
+
+Additional forecasting model options.
+
+More advanced explanation methods such as SHAP.
+
+Formal usability testing with SME users.
+
+Improved export and reporting features.
+
 ## Project Structure
 
 ```text
@@ -80,6 +154,8 @@ juniorIS/
 ├── bibliography.bib
 ├── Chocolate Sales.csv
 └── README.md
+
+
 
 
 
